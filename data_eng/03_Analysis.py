@@ -99,41 +99,36 @@ from urllib.request import urlopen
 
 # In[ ]:
 
+def verify_and_load_files():
+    # Path to data file
+    data_path = "data/"
 
-# Path to data file
-data_path = "data/"
+    # The list of files for this notebook
+    file_list = ['merged_dataframe.parquet']
 
-# The list of files for this notebook
-file_list = ['merged_dataframe.parquet']
+    # If the data_path var is set, create a list of files in the data_path
+    if data_path:
+        dir_list = os.listdir(data_path)
+    else:
+        print("Error: The data path variable does not exist!")
 
-# If the data_path var is set, create a list of files in the data_path
-if data_path:
-    dir_list = os.listdir(data_path)
-else:
-    print("Error: The data path variable does not exist!")
+    # Verify all of the files from the file_list exist inside the directory list
+    if set(file_list).intersection(set(dir_list)):
+        # Import the merged data
+        # This dataframe is the result of the data manipulation and index creation stages
+        df = pd.read_parquet(os.path.join(data_path,file_list[0]))
 
-# Verify all of the files from the file_list exist inside the directory list
-if set(file_list).intersection(set(dir_list)):
-    # Import the merged data
-    # This dataframe is the result of the data manipulation and index creation stages
-    df = pd.read_parquet(os.path.join(data_path,file_list[0]))
+        # Add a column which concats County & State for convenience
+        # This variable is used for the hover name in the choropleth maps
+        df['CountyState'] = df['County'] + ", " + df['State']
 
-    # Add a column which concats County & State for convenience
-    # This variable is used for the hover name in the choropleth maps
-    df['CountyState'] = df['County'] + ", " + df['State']
+        # Multiply the percentages by 100 for easier graphing
+        df['median_home_value_2yr_change_perc'] = df['median_home_value_2yr_change_perc']*100
+        df['median_income_2yr_change_perc'] = df['median_income_2yr_change_perc']*100
+    else:
+        print("Error:  Not all data from the file list is available.")
 
-    # Multiply the percentages by 100 for easier graphing
-    df['median_home_value_2yr_change_perc'] = df['median_home_value_2yr_change_perc']*100
-    df['median_income_2yr_change_perc'] = df['median_income_2yr_change_perc']*100
-else:
-    print("Error:  Not all data from the file list is available.")
-
-
-# In[ ]:
-
-
-# Validate the data loaded successfully
-df[df.Year == 2022].head(5)
+    return df
 
 
 # ### Functions
@@ -331,15 +326,16 @@ def add_anno(f, t, x=0.25, y=0.0):
     
     return f
 
+df = verify_and_load_files()
+# Validate the data loaded successfully
+df[df.Year == 2022].head(5)
+
 
 # ### Create Common Variables, Objects and Dataframes
 
 # **Counties GeoJSON**
 # 
 # This object contains the polygon boundaries of the counties.  It is passed into the Plotly Express Choropleth maps function to satisfy the requirement for the "geojson" variable.
-
-# In[ ]:
-
 
 ### Download a copy of the geojson counties boundary file
 # This file is used for the geojson variable in the choropleths
@@ -1354,9 +1350,3 @@ fig.show(config=px_config)
 # ### Summary
 
 # National and regional analysis shows movement towards a decrease in affordability in exurb counties and increases in affordability in city cores, as shown in New York City and San Francisco donut effects. The question that now arises is whether this trend will sustain itself despite [rising interest rates](https://www.bankrate.com/real-estate/how-fed-rate-hike-affects-housing/) accompanied by an increasing number of [available housing inventory](https://fred.stlouisfed.org/series/MSACSR) on the market. With return-to-workplace requirements and changes in macroeconomic policies, future analysis should observe whether the affordability trend will continue, or whether a housing value retraction will take place in suburbs and exurbs.
-
-# 
-
-# <a style='text-decoration:none;line-height:16px;display:flex;color:#5B5B62;padding:10px;justify-content:end;' href='https://deepnote.com?utm_source=created-in-deepnote-cell&projectId=295bb911-c56a-4f18-9d98-f03c8b82d5f2' target="_blank">
-# <img alt='Created in deepnote.com' style='display:inline;max-height:16px;margin:0px;margin-right:7.5px;' src='data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iODBweCIgaGVpZ2h0PSI4MHB4IiB2aWV3Qm94PSIwIDAgODAgODAiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8IS0tIEdlbmVyYXRvcjogU2tldGNoIDU0LjEgKDc2NDkwKSAtIGh0dHBzOi8vc2tldGNoYXBwLmNvbSAtLT4KICAgIDx0aXRsZT5Hcm91cCAzPC90aXRsZT4KICAgIDxkZXNjPkNyZWF0ZWQgd2l0aCBTa2V0Y2guPC9kZXNjPgogICAgPGcgaWQ9IkxhbmRpbmciIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPgogICAgICAgIDxnIGlkPSJBcnRib2FyZCIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTEyMzUuMDAwMDAwLCAtNzkuMDAwMDAwKSI+CiAgICAgICAgICAgIDxnIGlkPSJHcm91cC0zIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMjM1LjAwMDAwMCwgNzkuMDAwMDAwKSI+CiAgICAgICAgICAgICAgICA8cG9seWdvbiBpZD0iUGF0aC0yMCIgZmlsbD0iIzAyNjVCNCIgcG9pbnRzPSIyLjM3NjIzNzYyIDgwIDM4LjA0NzY2NjcgODAgNTcuODIxNzgyMiA3My44MDU3NTkyIDU3LjgyMTc4MjIgMzIuNzU5MjczOSAzOS4xNDAyMjc4IDMxLjY4MzE2ODMiPjwvcG9seWdvbj4KICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik0zNS4wMDc3MTgsODAgQzQyLjkwNjIwMDcsNzYuNDU0OTM1OCA0Ny41NjQ5MTY3LDcxLjU0MjI2NzEgNDguOTgzODY2LDY1LjI2MTk5MzkgQzUxLjExMjI4OTksNTUuODQxNTg0MiA0MS42NzcxNzk1LDQ5LjIxMjIyODQgMjUuNjIzOTg0Niw0OS4yMTIyMjg0IEMyNS40ODQ5Mjg5LDQ5LjEyNjg0NDggMjkuODI2MTI5Niw0My4yODM4MjQ4IDM4LjY0NzU4NjksMzEuNjgzMTY4MyBMNzIuODcxMjg3MSwzMi41NTQ0MjUgTDY1LjI4MDk3Myw2Ny42NzYzNDIxIEw1MS4xMTIyODk5LDc3LjM3NjE0NCBMMzUuMDA3NzE4LDgwIFoiIGlkPSJQYXRoLTIyIiBmaWxsPSIjMDAyODY4Ij48L3BhdGg+CiAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMCwzNy43MzA0NDA1IEwyNy4xMTQ1MzcsMC4yNTcxMTE0MzYgQzYyLjM3MTUxMjMsLTEuOTkwNzE3MDEgODAsMTAuNTAwMzkyNyA4MCwzNy43MzA0NDA1IEM4MCw2NC45NjA0ODgyIDY0Ljc3NjUwMzgsNzkuMDUwMzQxNCAzNC4zMjk1MTEzLDgwIEM0Ny4wNTUzNDg5LDc3LjU2NzA4MDggNTMuNDE4MjY3Nyw3MC4zMTM2MTAzIDUzLjQxODI2NzcsNTguMjM5NTg4NSBDNTMuNDE4MjY3Nyw0MC4xMjg1NTU3IDM2LjMwMzk1NDQsMzcuNzMwNDQwNSAyNS4yMjc0MTcsMzcuNzMwNDQwNSBDMTcuODQzMDU4NiwzNy43MzA0NDA1IDkuNDMzOTE5NjYsMzcuNzMwNDQwNSAwLDM3LjczMDQ0MDUgWiIgaWQ9IlBhdGgtMTkiIGZpbGw9IiMzNzkzRUYiPjwvcGF0aD4KICAgICAgICAgICAgPC9nPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+' > </img>
-# Created in <span style='font-weight:600;margin-left:4px;'>Deepnote</span></a>
